@@ -7,7 +7,11 @@ const dns = require("dns");
 /* =========================
    FORCE IPV4 ONLY (RENDER FIX)
 ========================= */
-dns.setDefaultResultOrder("ipv4first");
+try {
+  dns.setDefaultResultOrder("ipv4first");
+} catch {
+  // Ignore on older Node versions
+}
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -15,8 +19,40 @@ const PORT = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
-if (!process.env.DATABASE_URL) {
+function stripSurroundingQuotes(value) {
+  if (!value) return value;
+  const trimmed = String(value).trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+const DATABASE_URL = stripSurroundingQuotes(process.env.DATABASE_URL);
+
+if (!DATABASE_URL) {
   console.error("❌ DATABASE_URL not set");
+  process.exit(1);
+}
+
+// Safe diagnostics (does NOT log password)
+try {
+  const parsed = new URL(DATABASE_URL);
+  console.log(
+    `🔎 DB target: ${parsed.username || "(none)"}@${parsed.host || "(none)"}${parsed.pathname || ""}`
+  );
+  if (parsed.port === "5432" && parsed.hostname.startsWith("db.")) {
+    console.warn(
+      "⚠️  You are using the direct Supabase DB host on port 5432. On Render this can fail due to IPv6 routing. Prefer the Supabase pooler URL (port 6543)."
+    );
+  }
+} catch {
+  console.error(
+    "❌ DATABASE_URL is not a valid URL. Set it on Render without quotes. Example: postgresql://user:pass@aws-*.pooler.supabase.com:6543/postgres?pgbouncer=true"
+  );
   process.exit(1);
 }
 
@@ -24,11 +60,13 @@ if (!process.env.DATABASE_URL) {
    FORCE IPV4 IN PG
 ========================= */
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: DATABASE_URL,
   ssl: { rejectUnauthorized: false },
   // 👇 THIS IS THE KEY LINE
   family: 4, // force IPv4, block IPv6
 });
+
+let dbHealthy = false;
 
 /* =========================
    TEST DB CONNECTION
@@ -38,9 +76,11 @@ const pool = new Pool({
     const client = await pool.connect();
     await client.query("SELECT 1");
     client.release();
+    dbHealthy = true;
     console.log("✅ Connected to Supabase Database (IPv4)");
   } catch (err) {
-    console.error("❌ Database connection failed:", err.message);
+    dbHealthy = false;
+    console.error("❌ Database connection failed:", err);
   }
 })();
 
@@ -55,6 +95,10 @@ app.get("/api/services", async (req, res) => {
   const { search } = req.query;
 
   try {
+    if (!dbHealthy) {
+      return res.status(503).json({ error: "Database unavailable" });
+    }
+
     let query = `
       SELECT
         sn.id,
@@ -80,9 +124,15 @@ app.get("/api/services", async (req, res) => {
     }
 
     const { rows } = await pool.query(query, values);
+    dbHealthy = true;
     res.json(rows);
   } catch (err) {
     console.error("❌ /api/services error:", err);
+    const code = err?.code;
+    if (code === "ENETUNREACH" || code === "ECONNREFUSED" || code === "ETIMEDOUT") {
+      dbHealthy = false;
+      return res.status(503).json({ error: "Database unavailable" });
+    }
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
