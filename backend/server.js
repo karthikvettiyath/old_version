@@ -1,7 +1,13 @@
 require("dotenv").config();
+const dns = require("dns");
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
+
+/* =========================
+   FORCE IPV4 (CRITICAL)
+========================= */
+dns.setDefaultResultOrder("ipv4first");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -15,13 +21,6 @@ app.use(express.json());
 /* =========================
    DATABASE CONFIG
 ========================= */
-/*
-  IMPORTANT:
-  - DATABASE_URL must be the DIRECT Supabase connection string
-  - Username: postgres
-  - Port: 5432
-  - Password must be URL-ENCODED
-*/
 if (!process.env.DATABASE_URL) {
   console.error("❌ DATABASE_URL is not set");
   process.exit(1);
@@ -29,13 +28,11 @@ if (!process.env.DATABASE_URL) {
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false, // REQUIRED for Supabase on Render
-  },
+  ssl: { rejectUnauthorized: false },
 });
 
 /* =========================
-   TEST DATABASE CONNECTION
+   TEST DB CONNECTION
 ========================= */
 (async () => {
   try {
@@ -51,16 +48,10 @@ const pool = new Pool({
 /* =========================
    ROUTES
 ========================= */
-
-// Health check (IMPORTANT)
 app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
-/*
-  GET /api/services
-  Optional query param: ?search=keyword
-*/
 app.get("/api/services", async (req, res) => {
   const { search } = req.query;
 
