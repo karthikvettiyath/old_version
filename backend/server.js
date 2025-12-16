@@ -20,7 +20,19 @@ app.use(cors());
 app.use(express.json());
 
 // Database Connection
-const databaseUrl = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
+function stripSurroundingQuotes(value) {
+    if (!value) return value;
+    const trimmed = value.trim();
+    if (
+        (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+        (trimmed.startsWith("'") && trimmed.endsWith("'"))
+    ) {
+        return trimmed.slice(1, -1);
+    }
+    return trimmed;
+}
+
+const databaseUrl = stripSurroundingQuotes(process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL);
 
 const sslConfig = (process.env.PGSSLMODE === 'disable' || process.env.DB_SSL === 'false')
     ? false
@@ -28,6 +40,19 @@ const sslConfig = (process.env.PGSSLMODE === 'disable' || process.env.DB_SSL ===
 
 let poolConfig;
 if (databaseUrl) {
+    try {
+        // Validate early to avoid pg-connection-string throwing a confusing error.
+        // Common Render mistake: storing DATABASE_URL with surrounding quotes.
+        new URL(databaseUrl);
+    } catch (e) {
+        console.error(
+            'Database config error: DATABASE_URL is not a valid URL. ' +
+            'On Render, set DATABASE_URL without surrounding quotes. Example: postgresql://user:pass@host:6543/db?pgbouncer=true'
+        );
+        console.error('DATABASE_URL (sanitized) starts with:', String(databaseUrl).slice(0, 30));
+        process.exit(1);
+    }
+
     poolConfig = {
         connectionString: databaseUrl,
         ssl: sslConfig
