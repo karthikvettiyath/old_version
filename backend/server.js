@@ -97,9 +97,10 @@ app.get("/api/services", async (req, res) => {
   const { search } = req.query;
 
   try {
-    if (!pool || !dbHealthy) {
-      return res.status(503).json({ error: "Database unavailable" });
+    if (!pool) {
+      return res.status(503).json({ error: "Database unavailable (No Pool)" });
     }
+
 
     let query = `
       SELECT
