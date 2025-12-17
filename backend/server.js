@@ -33,45 +33,47 @@ function stripSurroundingQuotes(value) {
 
 const DATABASE_URL = stripSurroundingQuotes(process.env.DATABASE_URL);
 
-if (!DATABASE_URL) {
-  console.error("❌ DATABASE_URL not set");
-  process.exit(1);
-}
+let pool = null;
+let dbHealthy = false;
 
-// Safe diagnostics (does NOT log password)
-try {
-  const parsed = new URL(DATABASE_URL);
-  console.log(
-    `🔎 DB target: ${parsed.username || "(none)"}@${parsed.host || "(none)"}${parsed.pathname || ""}`
+if (!DATABASE_URL) {
+  console.warn(
+    "⚠️  DATABASE_URL not set. Backend will start, but /api/services will return 503 until a database is configured."
   );
-  if (parsed.port === "5432" && parsed.hostname.startsWith("db.")) {
+} else {
+  // Safe diagnostics (does NOT log password)
+  try {
+    const parsed = new URL(DATABASE_URL);
+    console.log(
+      `🔎 DB target: ${parsed.username || "(none)"}@${parsed.host || "(none)"}${parsed.pathname || ""}`
+    );
+    if (parsed.port === "5432" && parsed.hostname.startsWith("db.")) {
+      console.warn(
+        "⚠️  You are using the direct Supabase DB host on port 5432. On Render this can fail due to IPv6 routing. Prefer the Supabase pooler URL (port 6543)."
+      );
+    }
+  } catch {
     console.warn(
-      "⚠️  You are using the direct Supabase DB host on port 5432. On Render this can fail due to IPv6 routing. Prefer the Supabase pooler URL (port 6543)."
+      "⚠️  DATABASE_URL is not a valid URL. Backend will start, but /api/services will return 503 until DATABASE_URL is fixed."
     );
   }
-} catch {
-  console.error(
-    "❌ DATABASE_URL is not a valid URL. Set it on Render without quotes. Example: postgresql://user:pass@aws-*.pooler.supabase.com:6543/postgres?pgbouncer=true"
-  );
-  process.exit(1);
+
+  /* =========================
+     FORCE IPV4 IN PG
+  ========================= */
+  pool = new Pool({
+    connectionString: DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    // 👇 THIS IS THE KEY LINE
+    family: 4, // force IPv4, block IPv6
+  });
 }
-
-/* =========================
-   FORCE IPV4 IN PG
-========================= */
-const pool = new Pool({
-  connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  // 👇 THIS IS THE KEY LINE
-  family: 4, // force IPv4, block IPv6
-});
-
-let dbHealthy = false;
 
 /* =========================
    TEST DB CONNECTION
 ========================= */
 (async () => {
+  if (!pool) return;
   try {
     const client = await pool.connect();
     await client.query("SELECT 1");
@@ -95,7 +97,7 @@ app.get("/api/services", async (req, res) => {
   const { search } = req.query;
 
   try {
-    if (!dbHealthy) {
+    if (!pool || !dbHealthy) {
       return res.status(503).json({ error: "Database unavailable" });
     }
 
@@ -137,6 +139,10 @@ app.get("/api/services", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;

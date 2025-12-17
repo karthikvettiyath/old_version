@@ -18,7 +18,7 @@ const SearchSection = () => {
     setActiveTab('services'); // Reset to services tab on new search
     try {
       // Use environment variable for API URL, fallback to localhost
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:10000' : '');
       const response = await fetch(`${API_URL}/api/services?search=${encodeURIComponent(query)}`);
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
@@ -57,8 +57,8 @@ const SearchSection = () => {
               />
               <Search style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
             </div>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="btn"
               style={{ borderRadius: '30px', padding: '0 30px' }}
             >
@@ -114,24 +114,24 @@ const SearchSection = () => {
 
                   <div style={{ display: 'grid', gap: '30px' }}>
                     {results.map((service) => (
-                      <div key={service.id} style={{ 
-                        background: '#fff', 
-                        borderRadius: '12px', 
-                        overflow: 'hidden', 
+                      <div key={service.id} style={{
+                        background: '#fff',
+                        borderRadius: '12px',
+                        overflow: 'hidden',
                         boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
                         display: 'flex',
                         flexDirection: 'column'
                       }}>
                         {/* Image removed as requested */}
-                        
+
                         <div style={{ padding: '25px' }}>
-                          <div style={{ 
-                            display: 'inline-block', 
-                            padding: '5px 10px', 
-                            background: '#e1f0fa', 
-                            color: '#3498db', 
-                            borderRadius: '15px', 
-                            fontSize: '0.85rem', 
+                          <div style={{
+                            display: 'inline-block',
+                            padding: '5px 10px',
+                            background: '#e1f0fa',
+                            color: '#3498db',
+                            borderRadius: '15px',
+                            fontSize: '0.85rem',
                             marginBottom: '10px',
                             fontWeight: '600'
                           }}>
@@ -139,7 +139,7 @@ const SearchSection = () => {
                           </div>
                           <h3 style={{ color: '#2c3e50', marginBottom: '15px', fontSize: '1.5rem' }}>{service.title}</h3>
                           <p style={{ color: '#555', lineHeight: '1.7' }}>{service.description}</p>
-                          
+
                           {/* Render detailed view if available, passing the active tab */}
                           {service.details && <ServiceDetailView details={service.details} activeTab={activeTab} />}
                         </div>
