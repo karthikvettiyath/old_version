@@ -10,7 +10,7 @@ const AdminPage = () => {
     // Editing state
     const [editingId, setEditingId] = useState(null);
     const [editForm, setEditForm] = useState({});
-    const [activeEditTab, setActiveEditTab] = useState('general'); // 'general', 'content', 'faq'
+    const [activeEditTab, setActiveEditTab] = useState('general'); // 'content' (includes general+cards), 'faq'
 
     const [message, setMessage] = useState({ text: '', type: '' });
 
@@ -67,7 +67,7 @@ const AdminPage = () => {
             cards: details?.cards || [],
             faqs: details?.faqs || []
         });
-        setActiveEditTab('general');
+        // Default tab set by button click
     };
 
     const handleCancel = () => {
@@ -145,26 +145,27 @@ const AdminPage = () => {
         <div style={{ padding: '40px 20px', maxWidth: '1200px', margin: '0 auto', background: '#f8f9fa', minHeight: '100vh' }}>
 
             {/* Header & Search */}
-            <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-                <h1 style={{ color: '#2c3e50', margin: 0 }}>Admin Dashboard</h1>
+            <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+                <h1 style={{ color: '#2c3e50', marginBottom: '30px' }}>Admin Dashboard</h1>
 
-                <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
+                <div style={{ position: 'relative', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
                     <input
                         type="text"
-                        placeholder="Search services..."
+                        placeholder="Search for a service to edit..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         style={{
                             width: '100%',
-                            padding: '12px 20px',
-                            paddingLeft: '40px',
-                            borderRadius: '25px',
-                            border: '1px solid #ddd',
+                            padding: '15px 25px',
+                            paddingLeft: '50px',
+                            borderRadius: '30px',
+                            border: '2px solid #e2e8f0',
                             outline: 'none',
-                            fontSize: '1rem'
+                            fontSize: '1.1rem',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
                         }}
                     />
-                    <Search color="#999" size={18} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
+                    <Search color="#94a3b8" size={20} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)' }} />
                 </div>
             </div>
 
@@ -176,6 +177,7 @@ const AdminPage = () => {
                     borderRadius: '8px',
                     backgroundColor: message.type === 'error' ? '#fee2e2' : '#dcfce7',
                     color: message.type === 'error' ? '#dc2626' : '#16a34a',
+                    maxWidth: '800px', margin: '0 auto 20px auto',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                 }}>
                     <span>{message.text}</span>
@@ -189,228 +191,204 @@ const AdminPage = () => {
             {loading ? (
                 <div style={{ textAlign: 'center', fontSize: '1.2rem', color: '#666', marginTop: '50px' }}>Loading...</div>
             ) : (
-                <div style={{ display: 'grid', gap: '20px' }}>
-                    {filteredServices.map((service) => (
-                        <div key={service.id} style={{
-                            background: '#fff',
-                            borderRadius: '12px',
-                            padding: '25px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                            border: editingId === service.id ? '2px solid #3498db' : '1px solid #eee'
-                        }}>
-                            {editingId === service.id ? (
-                                // --- EDIT MODE ---
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-                                    {/* Edit Header */}
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '15px' }}>
-                                        <h3 style={{ margin: 0, color: '#3498db' }}>Editing: {service.name}</h3>
-                                        <div style={{ display: 'flex', gap: '10px' }}>
-                                            <button
-                                                onClick={() => handleSave(service.id)}
-                                                className="btn-save"
-                                                style={{ padding: '8px 16px', borderRadius: '6px', background: '#16a34a', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
-                                            >
-                                                <Save size={18} /> Save Changes
-                                            </button>
-                                            <button
-                                                onClick={handleCancel}
-                                                style={{ padding: '8px 16px', borderRadius: '6px', background: '#ef4444', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
-                                            >
-                                                <X size={18} /> Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Tabs */}
-                                    <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid #eee' }}>
-                                        {[
-                                            { id: 'general', label: 'General Info', icon: FileText },
-                                            { id: 'content', label: 'Process & Docs', icon: List },
-                                            { id: 'faq', label: 'FAQs', icon: HelpCircle },
-                                        ].map(tab => (
-                                            <button
-                                                key={tab.id}
-                                                onClick={() => setActiveEditTab(tab.id)}
-                                                style={{
-                                                    padding: '10px 20px',
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    borderBottom: activeEditTab === tab.id ? '3px solid #3498db' : '3px solid transparent',
-                                                    color: activeEditTab === tab.id ? '#3498db' : '#666',
-                                                    cursor: 'pointer',
-                                                    fontWeight: '600',
-                                                    display: 'flex', alignItems: 'center', gap: '8px'
-                                                }}
-                                            >
-                                                <tab.icon size={18} /> {tab.label}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {/* Tab Content */}
-                                    <div style={{ padding: '10px 0' }}>
-
-                                        {/* 1. GENERAL TAB */}
-                                        {activeEditTab === 'general' && (
-                                            <div style={{ display: 'grid', gap: '15px' }}>
-                                                <div>
-                                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', color: '#4b5563' }}>Service Name (Category)</label>
-                                                    <input
-                                                        type="text"
-                                                        value={editForm.name}
-                                                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                                                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', color: '#4b5563' }}>Display Title</label>
-                                                    <input
-                                                        type="text"
-                                                        value={editForm.title}
-                                                        onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                                                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', color: '#4b5563' }}>Short Description</label>
-                                                    <textarea
-                                                        value={editForm.description}
-                                                        onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                                                        rows={3}
-                                                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', resize: 'vertical' }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* 2. CONTENT TAB */}
-                                        {activeEditTab === 'content' && (
-                                            <div style={{ display: 'grid', gap: '25px' }}>
-                                                {editForm.cards.map((card, index) => (
-                                                    <div key={index} style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                                        <div style={{ marginBottom: '10px', fontWeight: 'bold', color: '#334155' }}>Section #{index + 1}</div>
-
-                                                        <div style={{ marginBottom: '10px' }}>
-                                                            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', color: '#64748b' }}>Section Title</label>
-                                                            <input
-                                                                type="text"
-                                                                value={card.title}
-                                                                onChange={(e) => handleCardChange(index, 'title', e.target.value)}
-                                                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-                                                            />
-                                                        </div>
-
-                                                        {card.items ? (
-                                                            <div>
-                                                                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', color: '#64748b' }}>List Items (One per line)</label>
-                                                                <textarea
-                                                                    value={card.items.join('\n')}
-                                                                    onChange={(e) => handleCardItemsChange(index, e.target.value)}
-                                                                    rows={5}
-                                                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', resize: 'vertical' }}
-                                                                    placeholder="Item 1&#10;Item 2&#10;Item 3"
-                                                                />
-                                                            </div>
-                                                        ) : (
-                                                            <div>
-                                                                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', color: '#64748b' }}>Content Text</label>
-                                                                <textarea
-                                                                    value={card.content || ''}
-                                                                    onChange={(e) => handleCardChange(index, 'content', e.target.value)}
-                                                                    rows={5}
-                                                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', resize: 'vertical' }}
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {/* 3. FAQ TAB */}
-                                        {activeEditTab === 'faq' && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                                {editForm.faqs.map((faq, index) => (
-                                                    <div key={index} style={{ display: 'flex', gap: '15px', alignItems: 'start', background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                                        <div style={{ flex: 1, display: 'grid', gap: '10px' }}>
-                                                            <input
-                                                                type="text"
-                                                                value={faq.q}
-                                                                onChange={(e) => handleFaqChange(index, 'q', e.target.value)}
-                                                                placeholder="Question"
-                                                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: '500' }}
-                                                            />
-                                                            <textarea
-                                                                value={faq.a}
-                                                                onChange={(e) => handleFaqChange(index, 'a', e.target.value)}
-                                                                placeholder="Answer"
-                                                                rows={2}
-                                                                style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', resize: 'vertical' }}
-                                                            />
-                                                        </div>
-                                                        <button
-                                                            onClick={() => removeFaq(index)}
-                                                            title="Delete FAQ"
-                                                            style={{ padding: '8px', borderRadius: '4px', background: '#fee2e2', color: '#ef4444', border: 'none', cursor: 'pointer', marginTop: '5px' }}
-                                                        >
-                                                            <Trash2 size={18} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-
-                                                <button
-                                                    onClick={addFaq}
-                                                    style={{ alignSelf: 'center', padding: '10px 20px', borderRadius: '25px', background: '#e0f2fe', color: '#0ea5e9', border: 'none', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}
-                                                >
-                                                    <Plus size={18} /> Add New FAQ
-                                                </button>
-                                            </div>
-                                        )}
-
-                                    </div>
-                                </div>
-                            ) : (
-                                // --- VIEW MODE ---
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{
-                                            display: 'inline-block',
-                                            padding: '4px 10px',
-                                            background: '#f1f5f9',
-                                            color: '#64748b',
-                                            borderRadius: '15px',
-                                            fontSize: '0.8rem',
-                                            marginBottom: '8px',
-                                            fontWeight: '600',
-                                            textTransform: 'uppercase', letterSpacing: '0.5px'
-                                        }}>
-                                            {service.name}
-                                        </div>
-                                        <h3 style={{ margin: '0 0 8px 0', color: '#1e293b', fontSize: '1.25rem' }}>{service.title}</h3>
-                                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>{service.description}</p>
-                                    </div>
-                                    <button
-                                        onClick={() => handleEdit(service)}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '8px',
-                                            padding: '10px 20px', borderRadius: '8px',
-                                            background: '#3b82f6', color: '#fff', border: 'none', cursor: 'pointer',
-                                            marginLeft: '20px', fontWeight: '500', transition: 'background 0.2s'
-                                        }}
-                                        className="hover-btn"
-                                    >
-                                        <Edit2 size={18} /> Edit
-                                    </button>
-                                </div>
-                            )}
+                <div style={{ maxWidth: '800px', margin: '0 auto', display: 'grid', gap: '20px' }}>
+                    {!searchQuery.trim() ? (
+                        <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '40px' }}>
+                            <p>Enter a service name above to begin editing.</p>
                         </div>
-                    ))}
-
-                    {!loading && filteredServices.length === 0 && (
+                    ) : filteredServices.length === 0 ? (
                         <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
                             No services found matching "{searchQuery}"
                         </div>
+                    ) : (
+                        filteredServices.map((service) => (
+                            <div key={service.id} style={{
+                                background: '#fff',
+                                borderRadius: '12px',
+                                padding: '25px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                                border: '1px solid #eee'
+                            }}>
+                                {editingId === service.id ? (
+                                    // --- EDIT MODE ---
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+                                        {/* Edit Header */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '15px' }}>
+                                            <h3 style={{ margin: 0, color: '#3498db', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                {activeEditTab === 'faq' ? <HelpCircle size={24} /> : <FileText size={24} />}
+                                                Editing {activeEditTab === 'faq' ? 'FAQs' : 'Content'}: {service.name}
+                                            </h3>
+                                            <div style={{ display: 'flex', gap: '10px' }}>
+                                                <button
+                                                    onClick={() => handleSave(service.id)}
+                                                    className="btn-save"
+                                                    style={{ padding: '8px 16px', borderRadius: '6px', background: '#16a34a', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                                >
+                                                    <Save size={18} /> Save
+                                                </button>
+                                                <button
+                                                    onClick={handleCancel}
+                                                    style={{ padding: '8px 16px', borderRadius: '6px', background: '#ef4444', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                                >
+                                                    <X size={18} /> Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Edit Content Based on Selection */}
+                                        <div style={{ padding: '10px 0' }}>
+
+                                            {/* CONTENT EDITING (General + Sections) */}
+                                            {activeEditTab === 'content' && (
+                                                <div style={{ display: 'grid', gap: '25px' }}>
+                                                    {/* General Info Section */}
+                                                    <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                                        <h4 style={{ margin: '0 0 15px 0', color: '#475569' }}>General Information</h4>
+                                                        <div style={{ display: 'grid', gap: '15px' }}>
+                                                            <div>
+                                                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px', fontWeight: '600', color: '#64748b' }}>Display Title</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editForm.title}
+                                                                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                                                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px', fontWeight: '600', color: '#64748b' }}>Description</label>
+                                                                <textarea
+                                                                    value={editForm.description}
+                                                                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                                                    rows={2}
+                                                                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', resize: 'vertical' }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Cards/Sections */}
+                                                    {editForm.cards.map((card, index) => (
+                                                        <div key={index} style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                                            <div style={{ marginBottom: '10px', fontWeight: 'bold', color: '#334155' }}>Section: {card.title || `Section #${index + 1}`}</div>
+
+                                                            <div style={{ marginBottom: '10px' }}>
+                                                                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', color: '#64748b' }}>Title</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={card.title}
+                                                                    onChange={(e) => handleCardChange(index, 'title', e.target.value)}
+                                                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                                                />
+                                                            </div>
+
+                                                            {card.items ? (
+                                                                <div>
+                                                                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', color: '#64748b' }}>List Items (One per line)</label>
+                                                                    <textarea
+                                                                        value={card.items.join('\n')}
+                                                                        onChange={(e) => handleCardItemsChange(index, e.target.value)}
+                                                                        rows={5}
+                                                                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', resize: 'vertical' }}
+                                                                        placeholder="Item 1&#10;Item 2"
+                                                                    />
+                                                                </div>
+                                                            ) : (
+                                                                <div>
+                                                                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', color: '#64748b' }}>Content</label>
+                                                                    <textarea
+                                                                        value={card.content || ''}
+                                                                        onChange={(e) => handleCardChange(index, 'content', e.target.value)}
+                                                                        rows={5}
+                                                                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', resize: 'vertical' }}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* FAQ EDITING */}
+                                            {activeEditTab === 'faq' && (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                                    {editForm.faqs.map((faq, index) => (
+                                                        <div key={index} style={{ display: 'flex', gap: '15px', alignItems: 'start', background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                                            <div style={{ flex: 1, display: 'grid', gap: '10px' }}>
+                                                                <input
+                                                                    type="text"
+                                                                    value={faq.q}
+                                                                    onChange={(e) => handleFaqChange(index, 'q', e.target.value)}
+                                                                    placeholder="Question"
+                                                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontWeight: '500' }}
+                                                                />
+                                                                <textarea
+                                                                    value={faq.a}
+                                                                    onChange={(e) => handleFaqChange(index, 'a', e.target.value)}
+                                                                    placeholder="Answer"
+                                                                    rows={2}
+                                                                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1', resize: 'vertical' }}
+                                                                />
+                                                            </div>
+                                                            <button
+                                                                onClick={() => removeFaq(index)}
+                                                                title="Delete FAQ"
+                                                                style={{ padding: '8px', borderRadius: '4px', background: '#fee2e2', color: '#ef4444', border: 'none', cursor: 'pointer', marginTop: '5px' }}
+                                                            >
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+
+                                                    <button
+                                                        onClick={addFaq}
+                                                        style={{ alignSelf: 'center', padding: '10px 20px', borderRadius: '25px', background: '#e0f2fe', color: '#0ea5e9', border: 'none', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                                    >
+                                                        <Plus size={18} /> Add New FAQ
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                        </div>
+                                    </div>
+                                ) : (
+                                    // --- SEARCH RESULT ---
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
+                                        <div>
+                                            <h3 style={{ margin: '0 0 5px 0', color: '#2c3e50', fontSize: '1.2rem' }}>{service.name}</h3>
+                                            <div style={{ color: '#64748b', fontSize: '0.9rem' }}>{service.title}</div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: '15px' }}>
+                                            <button
+                                                onClick={() => { handleEdit(service); setActiveEditTab('content'); }}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                                    padding: '10px 20px', borderRadius: '8px',
+                                                    background: '#3b82f6', color: '#fff', border: 'none', cursor: 'pointer',
+                                                    fontWeight: '500', transition: 'all 0.2s'
+                                                }}
+                                                className="hover-btn"
+                                            >
+                                                <FileText size={18} /> Edit Services
+                                            </button>
+                                            <button
+                                                onClick={() => { handleEdit(service); setActiveEditTab('faq'); }}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                                    padding: '10px 20px', borderRadius: '8px',
+                                                    background: '#10b981', color: '#fff', border: 'none', cursor: 'pointer',
+                                                    fontWeight: '500', transition: 'all 0.2s'
+                                                }}
+                                                className="hover-btn"
+                                            >
+                                                <HelpCircle size={18} /> Edit FAQs
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))
                     )}
                 </div>
             )}
