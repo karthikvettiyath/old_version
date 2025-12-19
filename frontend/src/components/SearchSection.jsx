@@ -17,8 +17,8 @@ const SearchSection = () => {
     setHasSearched(true);
     setActiveTab('services'); // Reset to services tab on new search
     try {
-      // Use environment variable for API URL, fallback to localhost
-      const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:10000' : '');
+      // Use relative path - handled by Vite proxy in dev and Netlify redirects in prod
+      const API_URL = '';
       const response = await fetch(`${API_URL}/api/services?search=${encodeURIComponent(query)}`);
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();

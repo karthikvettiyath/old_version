@@ -117,6 +117,7 @@ app.get("/api/services", async (req, res) => {
 
     const values = [];
 
+    // If search is provided, filter. If NOT provided, return ALL services (useful for Admin).
     if (search) {
       query += `
         WHERE sn.name ILIKE $1
@@ -125,6 +126,8 @@ app.get("/api/services", async (req, res) => {
       `;
       values.push(`%${search}%`);
     }
+
+    query += ` ORDER BY sn.id ASC`; // Consistent ordering
 
     const { rows } = await pool.query(query, values);
     dbHealthy = true;
@@ -136,6 +139,52 @@ app.get("/api/services", async (req, res) => {
       dbHealthy = false;
       return res.status(503).json({ error: "Database unavailable" });
     }
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// Update service content
+app.put("/api/services/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, title, description, details } = req.body;
+
+  if (!pool) {
+    return res.status(503).json({ error: "Database unavailable" });
+  }
+
+  try {
+    // Start transaction
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Update service name
+      if (name) {
+        await client.query("UPDATE service_names SET name = $1 WHERE id = $2", [name, id]);
+      }
+
+      // Update service content
+      // Note: This updates the content associated with the service_id.
+      // Assuming 1-to-1 mapping for simplicity based on the GET query.
+      await client.query(
+        `UPDATE service_content 
+         SET title = COALESCE($1, title), 
+             description = COALESCE($2, description), 
+             details = COALESCE($3, details) 
+         WHERE service_id = $4`,
+        [title, description, details, id]
+      );
+
+      await client.query("COMMIT");
+      res.json({ success: true, message: "Service updated successfully" });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("❌ /api/services/:id update error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
