@@ -148,39 +148,39 @@ const AdminPage = () => {
             <div style={{ textAlign: 'center', marginBottom: '50px' }}>
                 <h1 style={{ color: '#2c3e50', marginBottom: '30px' }}>Admin Dashboard</h1>
 
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', maxWidth: '700px', margin: '0 auto' }}>
-                    <div style={{ position: 'relative', flex: 1 }}>
-                        <input
-                            type="text"
-                            placeholder="Search by title..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '15px 25px',
-                                paddingLeft: '50px',
-                                borderRadius: '30px',
-                                border: '2px solid #e2e8f0',
-                                outline: 'none',
-                                fontSize: '1.1rem',
-                                boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
-                            }}
-                        />
-                        <Search color="#94a3b8" size={20} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)' }} />
-                    </div>
-                    <button
-                        onClick={() => { }} // Search happens on type, button is visual/confirm
+                <div style={{ position: 'relative', width: '100%', maxWidth: '700px', margin: '0 auto' }}>
+                    <input
+                        type="text"
+                        placeholder="Search by title..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         style={{
-                            padding: '0 30px',
+                            width: '100%',
+                            padding: '15px 120px 15px 50px',
                             borderRadius: '30px',
+                            border: '2px solid #e2e8f0',
+                            outline: 'none',
+                            fontSize: '1.1rem',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                        }}
+                    />
+                    <Search color="#94a3b8" size={20} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)' }} />
+                    <button
+                        onClick={() => { }}
+                        style={{
+                            position: 'absolute',
+                            right: '6px',
+                            top: '6px',
+                            bottom: '6px',
+                            padding: '0 25px',
+                            borderRadius: '25px',
                             background: '#3b82f6',
                             color: 'white',
                             border: 'none',
                             fontWeight: '600',
-                            fontSize: '1rem',
+                            fontSize: '0.95rem',
                             cursor: 'pointer',
-                            boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)',
-                            whiteSpace: 'nowrap'
+                            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)'
                         }}
                     >
                         Search
