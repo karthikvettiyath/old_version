@@ -148,24 +148,43 @@ const AdminPage = () => {
             <div style={{ textAlign: 'center', marginBottom: '50px' }}>
                 <h1 style={{ color: '#2c3e50', marginBottom: '30px' }}>Admin Dashboard</h1>
 
-                <div style={{ position: 'relative', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
-                    <input
-                        type="text"
-                        placeholder="Search for a service to edit..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', maxWidth: '700px', margin: '0 auto' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                        <input
+                            type="text"
+                            placeholder="Search by title..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '15px 25px',
+                                paddingLeft: '50px',
+                                borderRadius: '30px',
+                                border: '2px solid #e2e8f0',
+                                outline: 'none',
+                                fontSize: '1.1rem',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                            }}
+                        />
+                        <Search color="#94a3b8" size={20} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)' }} />
+                    </div>
+                    <button
+                        onClick={() => { }} // Search happens on type, button is visual/confirm
                         style={{
-                            width: '100%',
-                            padding: '15px 25px',
-                            paddingLeft: '50px',
+                            padding: '0 30px',
                             borderRadius: '30px',
-                            border: '2px solid #e2e8f0',
-                            outline: 'none',
-                            fontSize: '1.1rem',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                            background: '#3b82f6',
+                            color: 'white',
+                            border: 'none',
+                            fontWeight: '600',
+                            fontSize: '1rem',
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)',
+                            whiteSpace: 'nowrap'
                         }}
-                    />
-                    <Search color="#94a3b8" size={20} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)' }} />
+                    >
+                        Search
+                    </button>
                 </div>
             </div>
 
