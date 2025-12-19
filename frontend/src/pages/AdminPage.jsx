@@ -36,7 +36,7 @@ const AdminPage = () => {
         fetchServices();
     }, []);
 
-    // Handle search
+    // Handle search (Live Filter)
     useEffect(() => {
         if (!searchQuery.trim()) {
             setFilteredServices(services);
@@ -49,6 +49,22 @@ const AdminPage = () => {
             setFilteredServices(filtered);
         }
     }, [searchQuery, services]);
+
+    // Handle Manual Search (Button/Enter) - Redundant but reassures user
+    const handleManualSearch = (e) => {
+        if (e) e.preventDefault();
+
+        if (!searchQuery.trim()) {
+            setFilteredServices(services);
+        } else {
+            const lowerQuery = searchQuery.toLowerCase();
+            const filtered = services.filter(service =>
+                service.name.toLowerCase().includes(lowerQuery) ||
+                service.title.toLowerCase().includes(lowerQuery)
+            );
+            setFilteredServices(filtered);
+        }
+    };
 
     const handleEdit = (service) => {
         setEditingId(service.id);
@@ -148,7 +164,10 @@ const AdminPage = () => {
             <div style={{ textAlign: 'center', marginBottom: '50px' }}>
                 <h1 style={{ color: '#2c3e50', marginBottom: '30px' }}>Admin Dashboard</h1>
 
-                <div style={{ position: 'relative', width: '100%', maxWidth: '700px', margin: '0 auto' }}>
+                <form
+                    onSubmit={handleManualSearch}
+                    style={{ position: 'relative', width: '100%', maxWidth: '700px', margin: '0 auto' }}
+                >
                     <input
                         type="text"
                         placeholder="Search by title..."
@@ -166,7 +185,7 @@ const AdminPage = () => {
                     />
                     <Search color="#94a3b8" size={20} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)' }} />
                     <button
-                        onClick={() => { }}
+                        type="submit"
                         style={{
                             position: 'absolute',
                             right: '6px',
@@ -180,12 +199,13 @@ const AdminPage = () => {
                             fontWeight: '600',
                             fontSize: '0.95rem',
                             cursor: 'pointer',
-                            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)'
+                            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)',
+                            zIndex: 10
                         }}
                     >
                         Search
                     </button>
-                </div>
+                </form>
             </div>
 
             {/* Notification */}
