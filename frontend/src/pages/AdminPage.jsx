@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Edit2, Save, X, Trash2, Plus, Search, FileText, List, HelpCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Edit2, Save, X, Trash2, Plus, Search, FileText, List, HelpCircle, LogOut } from 'lucide-react';
 
 const AdminPage = () => {
     const [services, setServices] = useState([]);
     const [filteredServices, setFilteredServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Auth state
+    const navigate = useNavigate();
 
     // Editing state
     const [editingId, setEditingId] = useState(null);
@@ -15,7 +19,21 @@ const AdminPage = () => {
     const [message, setMessage] = useState({ text: '', type: '' });
 
     const API_URL = '';
-    // Relative paths work automatically with Vite proxy (dev) and Netlify redirects (prod)
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+        fetchServices();
+    }, [navigate]);
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('adminUser');
+        navigate('/login');
+    };
 
     const fetchServices = async () => {
         try {
@@ -32,10 +50,6 @@ const AdminPage = () => {
         }
     };
 
-    useEffect(() => {
-        fetchServices();
-    }, []);
-
     // Handle search (Live Filter)
     useEffect(() => {
         if (!searchQuery.trim()) {
@@ -50,7 +64,7 @@ const AdminPage = () => {
         }
     }, [searchQuery, services]);
 
-    // Handle Manual Search (Button/Enter) - Redundant but reassures user
+    // Handle Manual Search
     const handleManualSearch = (e) => {
         if (e) e.preventDefault();
 
@@ -83,7 +97,6 @@ const AdminPage = () => {
             cards: details?.cards || [],
             faqs: details?.faqs || []
         });
-        // Default tab set by button click
     };
 
     const handleCancel = () => {
@@ -100,7 +113,6 @@ const AdminPage = () => {
     };
 
     const handleCardItemsChange = (index, value) => {
-        // value is a string from textarea, split by newlines for array
         const items = value.split('\n').filter(item => item.trim() !== '');
         const newCards = [...editForm.cards];
         newCards[index] = { ...newCards[index], items };
@@ -124,6 +136,12 @@ const AdminPage = () => {
     };
 
     const handleSave = async (id) => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+
         try {
             // Reconstruct the payload
             const detailsObj = {
@@ -142,9 +160,16 @@ const AdminPage = () => {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(payload),
             });
+
+            if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem('token');
+                navigate('/login');
+                return;
+            }
 
             if (!response.ok) throw new Error('Failed to update service');
 
@@ -161,8 +186,29 @@ const AdminPage = () => {
         <div style={{ padding: '40px 20px', maxWidth: '1200px', margin: '0 auto', background: '#f8f9fa', minHeight: '100vh' }}>
 
             {/* Header & Search */}
-            <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-                <h1 style={{ color: '#2c3e50', marginBottom: '30px' }}>Admin Dashboard</h1>
+            <div style={{ textAlign: 'center', marginBottom: '50px', position: 'relative' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginBottom: '30px' }}>
+                    <h1 style={{ color: '#2c3e50', margin: 0 }}>Admin Dashboard</h1>
+                    <button
+                        onClick={handleLogout}
+                        title="Logout"
+                        style={{
+                            background: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            padding: '8px 16px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontSize: '0.9rem',
+                            fontWeight: '600'
+                        }}
+                    >
+                        <LogOut size={16} /> Logout
+                    </button>
+                </div>
 
                 <form
                     onSubmit={handleManualSearch}

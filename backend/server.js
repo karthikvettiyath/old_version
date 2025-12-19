@@ -143,8 +143,56 @@ app.get("/api/services", async (req, res) => {
   }
 });
 
-// Update service content
-app.put("/api/services/:id", async (req, res) => {
+const jwt = require('jsonwebtoken');
+
+// ... imports ...
+
+/* =========================
+   AUTH MECHANISM
+   ========================= */
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+// In a real app, use a hash. For this MVP, we check plain text from ENV, 
+// or you could use bcrypt.compare if you stored a hash in ENV.
+// For simplicity:
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_change_me';
+
+if (!ADMIN_PASSWORD) {
+  console.warn("⚠️  ADMIN_PASSWORD not set in .env. Admin login will fail or be insecure.");
+}
+
+// Middleware
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+
+  if (!token) return res.status(401).json({ error: "Access token required" });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: "Invalid token" });
+    req.user = user;
+    next();
+  });
+}
+
+// 1. Login Endpoint
+app.post("/api/login", (req, res) => {
+  const { username, password } = req.body;
+
+  // Simple check against ENV
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    // Generate Token
+    // Expires in 1 hour
+    const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '8h' });
+    return res.json({ token, username });
+  }
+
+  return res.status(401).json({ error: "Invalid credentials" });
+});
+
+app.put("/api/services/:id", authenticateToken, async (req, res) => {
+  // ... implementation ...
+
   const { id } = req.params;
   const { name, title, description, details } = req.body;
 
