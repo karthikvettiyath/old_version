@@ -57,7 +57,7 @@ const AdminPage = () => {
         } else {
             const lowerQuery = searchQuery.toLowerCase();
             const filtered = services.filter(service =>
-                service.title && service.title.toLowerCase().includes(lowerQuery)
+                service.title && service.title.toLowerCase().startsWith(lowerQuery)
             );
             setFilteredServices(filtered);
         }
@@ -72,7 +72,7 @@ const AdminPage = () => {
         } else {
             const lowerQuery = searchQuery.toLowerCase();
             const filtered = services.filter(service =>
-                service.title && service.title.toLowerCase().includes(lowerQuery)
+                service.title && service.title.toLowerCase().startsWith(lowerQuery)
             );
             setFilteredServices(filtered);
         }
