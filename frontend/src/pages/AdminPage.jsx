@@ -12,9 +12,9 @@ const AdminPage = () => {
     const navigate = useNavigate();
 
     // Editing state
-    const [editingId, setEditingId] = useState(null);
+    const [editingId, setEditingId] = useState(null); // 'new' for creating
     const [editForm, setEditForm] = useState({});
-    const [activeEditTab, setActiveEditTab] = useState('general'); // 'content' (includes general+cards), 'faq'
+    const [activeEditTab, setActiveEditTab] = useState('general'); // 'content' or 'faq'
 
     const [message, setMessage] = useState({ text: '', type: '' });
 
@@ -99,10 +99,27 @@ const AdminPage = () => {
         });
     };
 
+    const handleCreateNew = () => {
+        setEditingId('new');
+        setSearchQuery('');
+        // Reset filter to show the form
+        setFilteredServices([]);
+
+        setEditForm({
+            name: '',
+            title: '',
+            description: '',
+            cards: [],
+            faqs: []
+        });
+        setActiveEditTab('content');
+    };
+
     const handleCancel = () => {
         setEditingId(null);
         setEditForm({});
         setSearchQuery('');
+        setFilteredServices(services); // Restore full list or previous state
     };
 
     // --- Content (Cards) Helpers ---
@@ -116,6 +133,19 @@ const AdminPage = () => {
         const items = value.split('\n').filter(item => item.trim() !== '');
         const newCards = [...editForm.cards];
         newCards[index] = { ...newCards[index], items };
+        setEditForm({ ...editForm, cards: newCards });
+    };
+
+    const addCard = () => {
+        // Default new card structure
+        setEditForm({
+            ...editForm,
+            cards: [...editForm.cards, { title: 'New Section', content: '', icon: 'FileText' }]
+        });
+    };
+
+    const removeCard = (index) => {
+        const newCards = editForm.cards.filter((_, i) => i !== index);
         setEditForm({ ...editForm, cards: newCards });
     };
 
@@ -156,8 +186,12 @@ const AdminPage = () => {
                 details: JSON.stringify(detailsObj)
             };
 
-            const response = await fetch(`${API_URL}/api/services/${id}`, {
-                method: 'PUT',
+            const isNew = id === 'new';
+            const url = isNew ? `${API_URL}/api/services` : `${API_URL}/api/services/${id}`;
+            const method = isNew ? 'POST' : 'PUT';
+
+            const response = await fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -171,14 +205,14 @@ const AdminPage = () => {
                 return;
             }
 
-            if (!response.ok) throw new Error('Failed to update service');
+            if (!response.ok) throw new Error(isNew ? 'Failed to create service' : 'Failed to update service');
 
-            setMessage({ text: 'Service updated successfully!', type: 'success' });
+            setMessage({ text: isNew ? 'Service created successfully!' : 'Service updated successfully!', type: 'success' });
             setEditingId(null);
             fetchServices(); // Refresh list
         } catch (error) {
             console.error('Error:', error);
-            setMessage({ text: 'Failed to update service', type: 'error' });
+            setMessage({ text: 'Failed to save service', type: 'error' });
         }
     };
 
@@ -189,69 +223,92 @@ const AdminPage = () => {
             <div style={{ textAlign: 'center', marginBottom: '50px', position: 'relative' }}>
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginBottom: '30px' }}>
                     <h1 style={{ color: '#2c3e50', margin: 0 }}>Admin Dashboard</h1>
-                    <button
-                        onClick={handleLogout}
-                        title="Logout"
-                        style={{
-                            background: '#ef4444',
-                            color: 'white',
-                            border: 'none',
-                            padding: '8px 16px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            fontSize: '0.9rem',
-                            fontWeight: '600'
-                        }}
-                    >
-                        <LogOut size={16} /> Logout
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                            onClick={handleCreateNew}
+                            title="Add New Service"
+                            style={{
+                                background: '#3b82f6',
+                                color: 'white',
+                                border: 'none',
+                                padding: '8px 16px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                fontSize: '0.9rem',
+                                fontWeight: '600'
+                            }}
+                        >
+                            <Plus size={16} /> Add Service
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            title="Logout"
+                            style={{
+                                background: '#ef4444',
+                                color: 'white',
+                                border: 'none',
+                                padding: '8px 16px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                fontSize: '0.9rem',
+                                fontWeight: '600'
+                            }}
+                        >
+                            <LogOut size={16} /> Logout
+                        </button>
+                    </div>
                 </div>
 
-                <form
-                    onSubmit={handleManualSearch}
-                    style={{ position: 'relative', width: '100%', maxWidth: '700px', margin: '0 auto' }}
-                >
-                    <input
-                        type="text"
-                        placeholder="Search by title..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '15px 120px 15px 50px',
-                            borderRadius: '30px',
-                            border: '2px solid #e2e8f0',
-                            outline: 'none',
-                            fontSize: '1.1rem',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
-                        }}
-                    />
-                    <Search color="#94a3b8" size={20} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)' }} />
-                    <button
-                        type="submit"
-                        style={{
-                            position: 'absolute',
-                            right: '6px',
-                            top: '6px',
-                            bottom: '6px',
-                            padding: '0 25px',
-                            borderRadius: '25px',
-                            background: '#3b82f6',
-                            color: 'white',
-                            border: 'none',
-                            fontWeight: '600',
-                            fontSize: '0.95rem',
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)',
-                            zIndex: 10
-                        }}
+                {editingId !== 'new' && (
+                    <form
+                        onSubmit={handleManualSearch}
+                        style={{ position: 'relative', width: '100%', maxWidth: '700px', margin: '0 auto' }}
                     >
-                        Search
-                    </button>
-                </form>
+                        <input
+                            type="text"
+                            placeholder="Search by title..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '15px 120px 15px 50px',
+                                borderRadius: '30px',
+                                border: '2px solid #e2e8f0',
+                                outline: 'none',
+                                fontSize: '1.1rem',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                            }}
+                        />
+                        <Search color="#94a3b8" size={20} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)' }} />
+                        <button
+                            type="submit"
+                            style={{
+                                position: 'absolute',
+                                right: '6px',
+                                top: '6px',
+                                bottom: '6px',
+                                padding: '0 25px',
+                                borderRadius: '25px',
+                                background: '#3b82f6',
+                                color: 'white',
+                                border: 'none',
+                                fontWeight: '600',
+                                fontSize: '0.95rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)',
+                                zIndex: 10
+                            }}
+                        >
+                            Search
+                        </button>
+                    </form>
+                )}
             </div>
 
             {/* Notification */}
@@ -272,14 +329,74 @@ const AdminPage = () => {
                 </div>
             )}
 
-            {/* List */}
+            {/* Editor (New or Edit) OR List */}
             {loading ? (
                 <div style={{ textAlign: 'center', fontSize: '1.2rem', color: '#666', marginTop: '50px' }}>Loading...</div>
             ) : (
                 <div style={{ maxWidth: '800px', margin: '0 auto', display: 'grid', gap: '20px' }}>
-                    {!searchQuery.trim() ? (
+
+                    {/* --- If creating new service, show editor immediately --- */}
+                    {editingId === 'new' ? (
+                        <div style={{ background: '#fff', borderRadius: '12px', padding: '25px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #eee' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '20px' }}>
+                                <h3 style={{ margin: 0, color: '#3b82f6' }}>Create New Service</h3>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button
+                                        onClick={() => handleSave('new')}
+                                        className="btn-save"
+                                        style={{ padding: '8px 16px', borderRadius: '6px', background: '#16a34a', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                    >
+                                        <Save size={18} /> Create
+                                    </button>
+                                    <button
+                                        onClick={handleCancel}
+                                        style={{ padding: '8px 16px', borderRadius: '6px', background: '#ef4444', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                    >
+                                        <X size={18} /> Cancel
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Service Name Input (Only for New) */}
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px', fontWeight: '600', color: '#64748b' }}>Service Name (Internal/Category)</label>
+                                <input
+                                    type="text"
+                                    value={editForm.name}
+                                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                    placeholder="e.g. Divorce"
+                                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                />
+                            </div>
+
+                            <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
+                                <h4 style={{ margin: '0 0 15px 0', color: '#475569' }}>General Information</h4>
+                                <div style={{ display: 'grid', gap: '15px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px', fontWeight: '600', color: '#64748b' }}>Display Title</label>
+                                        <input
+                                            type="text"
+                                            value={editForm.title}
+                                            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                            placeholder="e.g. Divorce Filing Assistance"
+                                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px', fontWeight: '600', color: '#64748b' }}>Description</label>
+                                        <textarea
+                                            value={editForm.description}
+                                            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                            rows={2}
+                                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', resize: 'vertical' }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : !searchQuery.trim() ? (
                         <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '40px' }}>
-                            <p>Enter a service name above to begin editing.</p>
+                            <p>Enter a service name above to begin editing, or click "Add Service" to create new.</p>
                         </div>
                     ) : filteredServices.length === 0 ? (
                         <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
@@ -355,7 +472,10 @@ const AdminPage = () => {
                                                     {/* Cards/Sections */}
                                                     {editForm.cards.map((card, index) => (
                                                         <div key={index} style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                                            <div style={{ marginBottom: '10px', fontWeight: 'bold', color: '#334155' }}>Section: {card.title || `Section #${index + 1}`}</div>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                                                <span style={{ fontWeight: 'bold', color: '#334155' }}>Section: {card.title || `Section #${index + 1}`}</span>
+                                                                <button onClick={() => removeCard(index)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                                                            </div>
 
                                                             <div style={{ marginBottom: '10px' }}>
                                                                 <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', color: '#64748b' }}>Title</label>
@@ -391,6 +511,13 @@ const AdminPage = () => {
                                                             )}
                                                         </div>
                                                     ))}
+
+                                                    <button
+                                                        onClick={addCard}
+                                                        style={{ alignSelf: 'center', padding: '10px 20px', borderRadius: '25px', background: '#e0f2fe', color: '#0ea5e9', border: 'none', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                                    >
+                                                        <Plus size={18} /> Add New Section
+                                                    </button>
                                                 </div>
                                             )}
 

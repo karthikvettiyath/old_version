@@ -190,6 +190,48 @@ app.post("/api/login", (req, res) => {
   return res.status(401).json({ error: "Invalid credentials" });
 });
 
+// Create new service
+app.post("/api/services", authenticateToken, async (req, res) => {
+  const { name, title, description, details } = req.body;
+
+  if (!pool) {
+    return res.status(503).json({ error: "Database unavailable" });
+  }
+
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // 1. Insert into service_names
+      const nameRes = await client.query(
+        "INSERT INTO service_names (name) VALUES ($1) RETURNING id",
+        [name]
+      );
+      const newServiceId = nameRes.rows[0].id;
+
+      // 2. Insert into service_content
+      // Default image_path to null or empty string for now
+      await client.query(
+        `INSERT INTO service_content (service_id, title, description, details, image_path)
+         VALUES ($1, $2, $3, $4, '')`,
+        [newServiceId, title, description, details]
+      );
+
+      await client.query("COMMIT");
+      res.status(201).json({ success: true, message: "Service created successfully", id: newServiceId });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("❌ /api/services POST error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 app.put("/api/services/:id", authenticateToken, async (req, res) => {
   // ... implementation ...
 
