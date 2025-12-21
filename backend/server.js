@@ -279,6 +279,39 @@ app.put("/api/services/:id", authenticateToken, async (req, res) => {
   }
 });
 
+// Delete service
+app.delete("/api/services/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+
+  if (!pool) {
+    return res.status(503).json({ error: "Database unavailable" });
+  }
+
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Delete content first (foreign key)
+      await client.query("DELETE FROM service_content WHERE service_id = $1", [id]);
+
+      // Delete service name/entry
+      await client.query("DELETE FROM service_names WHERE id = $1", [id]);
+
+      await client.query("COMMIT");
+      res.json({ success: true, message: "Service deleted successfully" });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("❌ /api/services/:id DELETE error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);

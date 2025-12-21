@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Edit2, Save, X, Trash2, Plus, Search, FileText, List, HelpCircle, LogOut } from 'lucide-react';
+import { Edit2, Save, X, Trash2, Plus, Search, FileText, List, HelpCircle, LogOut, AlertTriangle } from 'lucide-react';
 
 const AdminPage = () => {
     const [services, setServices] = useState([]);
@@ -50,21 +50,20 @@ const AdminPage = () => {
         }
     };
 
-    // Handle search (Live Filter)
+    // Handle search (Live Filter - Title ONLY as requested)
     useEffect(() => {
         if (!searchQuery.trim()) {
             setFilteredServices(services);
         } else {
             const lowerQuery = searchQuery.toLowerCase();
             const filtered = services.filter(service =>
-                service.name.toLowerCase().includes(lowerQuery) ||
-                service.title.toLowerCase().includes(lowerQuery)
+                service.title && service.title.toLowerCase().includes(lowerQuery)
             );
             setFilteredServices(filtered);
         }
     }, [searchQuery, services]);
 
-    // Handle Manual Search
+    // Handle Manual Search (Title ONLY)
     const handleManualSearch = (e) => {
         if (e) e.preventDefault();
 
@@ -73,8 +72,7 @@ const AdminPage = () => {
         } else {
             const lowerQuery = searchQuery.toLowerCase();
             const filtered = services.filter(service =>
-                service.name.toLowerCase().includes(lowerQuery) ||
-                service.title.toLowerCase().includes(lowerQuery)
+                service.title && service.title.toLowerCase().includes(lowerQuery)
             );
             setFilteredServices(filtered);
         }
@@ -102,7 +100,6 @@ const AdminPage = () => {
     const handleCreateNew = () => {
         setEditingId('new');
         setSearchQuery('');
-        // Reset filter to show the form
         setFilteredServices([]);
 
         setEditForm({
@@ -115,11 +112,46 @@ const AdminPage = () => {
         setActiveEditTab('content');
     };
 
+    const handleDeleteService = async (serviceId, serviceName) => {
+        const confirmDelete = window.confirm(`Are you sure you want to delete the service: "${serviceName}"? This cannot be undone.`);
+        if (!confirmDelete) return;
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/api/services/${serviceId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem('token');
+                navigate('/login');
+                return;
+            }
+
+            if (!response.ok) throw new Error('Failed to delete service');
+
+            setMessage({ text: 'Service deleted successfully', type: 'success' });
+            // Refresh list
+            fetchServices();
+        } catch (error) {
+            console.error('Error deleting service:', error);
+            setMessage({ text: 'Failed to delete service', type: 'error' });
+        }
+    };
+
     const handleCancel = () => {
         setEditingId(null);
         setEditForm({});
         setSearchQuery('');
-        setFilteredServices(services); // Restore full list or previous state
+        setFilteredServices(services);
     };
 
     // --- Content (Cards) Helpers ---
@@ -137,7 +169,6 @@ const AdminPage = () => {
     };
 
     const addCard = () => {
-        // Default new card structure
         setEditForm({
             ...editForm,
             cards: [...editForm.cards, { title: 'New Section', content: '', icon: 'FileText' }]
@@ -173,7 +204,6 @@ const AdminPage = () => {
         }
 
         try {
-            // Reconstruct the payload
             const detailsObj = {
                 cards: editForm.cards,
                 faqs: editForm.faqs
@@ -209,7 +239,7 @@ const AdminPage = () => {
 
             setMessage({ text: isNew ? 'Service created successfully!' : 'Service updated successfully!', type: 'success' });
             setEditingId(null);
-            fetchServices(); // Refresh list
+            fetchServices();
         } catch (error) {
             console.error('Error:', error);
             setMessage({ text: 'Failed to save service', type: 'error' });
@@ -338,6 +368,7 @@ const AdminPage = () => {
                     {/* --- If creating new service, show editor immediately --- */}
                     {editingId === 'new' ? (
                         <div style={{ background: '#fff', borderRadius: '12px', padding: '25px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #eee' }}>
+                            {/* ... New Service Form ... */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '20px' }}>
                                 <h3 style={{ margin: 0, color: '#3b82f6' }}>Create New Service</h3>
                                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -357,7 +388,6 @@ const AdminPage = () => {
                                 </div>
                             </div>
 
-                            {/* Service Name Input (Only for New) */}
                             <div style={{ marginBottom: '20px' }}>
                                 <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px', fontWeight: '600', color: '#64748b' }}>Service Name (Internal/Category)</label>
                                 <input
@@ -396,7 +426,7 @@ const AdminPage = () => {
                         </div>
                     ) : !searchQuery.trim() ? (
                         <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '40px' }}>
-                            <p>Enter a service name above to begin editing, or click "Add Service" to create new.</p>
+                            <p>Enter a service title above to begin editing, or click "Add Service" to create new.</p>
                         </div>
                     ) : filteredServices.length === 0 ? (
                         <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
@@ -440,7 +470,6 @@ const AdminPage = () => {
 
                                         {/* Edit Content Based on Selection */}
                                         <div style={{ padding: '10px 0' }}>
-
                                             {/* CONTENT EDITING (General + Sections) */}
                                             {activeEditTab === 'content' && (
                                                 <div style={{ display: 'grid', gap: '25px' }}>
@@ -574,27 +603,43 @@ const AdminPage = () => {
                                         <div style={{ display: 'flex', gap: '15px' }}>
                                             <button
                                                 onClick={() => { handleEdit(service); setActiveEditTab('content'); }}
+                                                className="hover-btn"
+                                                title="Edit Service Content"
                                                 style={{
                                                     display: 'flex', alignItems: 'center', gap: '8px',
                                                     padding: '10px 20px', borderRadius: '8px',
                                                     background: '#3b82f6', color: '#fff', border: 'none', cursor: 'pointer',
                                                     fontWeight: '500', transition: 'all 0.2s'
                                                 }}
-                                                className="hover-btn"
                                             >
                                                 <FileText size={18} /> Edit Services
                                             </button>
                                             <button
                                                 onClick={() => { handleEdit(service); setActiveEditTab('faq'); }}
+                                                className="hover-btn"
+                                                title="Edit FAQs"
                                                 style={{
                                                     display: 'flex', alignItems: 'center', gap: '8px',
                                                     padding: '10px 20px', borderRadius: '8px',
                                                     background: '#10b981', color: '#fff', border: 'none', cursor: 'pointer',
                                                     fontWeight: '500', transition: 'all 0.2s'
                                                 }}
-                                                className="hover-btn"
                                             >
                                                 <HelpCircle size={18} /> Edit FAQs
+                                            </button>
+                                            {/* Delete Button */}
+                                            <button
+                                                onClick={() => handleDeleteService(service.id, service.name)}
+                                                className="hover-btn"
+                                                title="Delete Service"
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                                    padding: '10px 20px', borderRadius: '8px',
+                                                    background: '#ef4444', color: '#fff', border: 'none', cursor: 'pointer',
+                                                    fontWeight: '500', transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <Trash2 size={18} />
                                             </button>
                                         </div>
                                     </div>
